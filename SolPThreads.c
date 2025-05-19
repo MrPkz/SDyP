@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 //
 // Para tiempo de ejecucion
@@ -29,7 +30,7 @@ double tIni, tFin, tTotal;
 //
 // Constantes para Algoritmo de gravitacion
 //
-#define PI (3.141592653589793)
+#define M_PI (3.141592653589793)
 #define G 6.673e-11
 #define ESTRELLA 0
 #define POLVO 1
@@ -68,78 +69,156 @@ float toroide_R;
 
 cuerpo_t *cuerpos;
 int delta_tiempo = 1.0f; // Intervalo de tiempo, longitud de un paso
+int dt = 1.0f;
 int pasos;
-int N;
+int N,T;
 
 //
 // Funciones para Algoritmo de gravitacion
 //
 
-void calcularFuerzas(cuerpo_t *cuerpos, int N, int dt)
+void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
+	int cuerpo1, cuerpo2;
+	float dif_X, dif_Y, dif_Z;
+	float distancia;
+	float F;
+
+	for (cuerpo1 = tid*bloque; cuerpo1 < (tid+1)*(bloque); cuerpo1++){
+		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
+			if ( (cuerpos[cuerpo1].px == cuerpos[cuerpo2].px) && (cuerpos[cuerpo1].py == cuerpos[cuerpo2].py) && (cuerpos[cuerpo1].pz == cuerpos[cuerpo2].pz))
+				continue;
+
+			dif_X = cuerpos[cuerpo2].px - cuerpos[cuerpo1].px;
+			dif_Y = cuerpos[cuerpo2].py - cuerpos[cuerpo1].py;
+			dif_Z = cuerpos[cuerpo2].pz - cuerpos[cuerpo1].pz;
+				
+			distancia = sqrt(dif_X*dif_X + dif_Y*dif_Y + dif_Z*dif_Z);
+
+			F = (G*cuerpos[cuerpo1].masa*cuerpos[cuerpo2].masa)/(distancia*distancia);
+
+			dif_X *= F;
+			dif_Y *= F;
+			dif_Z *= F;
+
+			fuerza_totalX[cuerpo1] += dif_X;
+			fuerza_totalY[cuerpo1] += dif_Y;
+			fuerza_totalZ[cuerpo1] += dif_Z;
+
+			fuerza_totalX[cuerpo2] -= dif_X;
+			fuerza_totalY[cuerpo2] -= dif_Y;
+			fuerza_totalZ[cuerpo2] -= dif_Z;
+		}
+	}
+
+    for (cuerpo1 = N-tid*bloque-1; cuerpo1 > N-((tid-1)*bloque)-1; cuerpo1--){
+		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
+			if ( (cuerpos[cuerpo1].px == cuerpos[cuerpo2].px) && (cuerpos[cuerpo1].py == cuerpos[cuerpo2].py) && (cuerpos[cuerpo1].pz == cuerpos[cuerpo2].pz))
+				continue;
+
+			dif_X = cuerpos[cuerpo2].px - cuerpos[cuerpo1].px;
+			dif_Y = cuerpos[cuerpo2].py - cuerpos[cuerpo1].py;
+			dif_Z = cuerpos[cuerpo2].pz - cuerpos[cuerpo1].pz;
+				
+			distancia = sqrt(dif_X*dif_X + dif_Y*dif_Y + dif_Z*dif_Z);
+
+			F = (G*cuerpos[cuerpo1].masa*cuerpos[cuerpo2].masa)/(distancia*distancia);
+
+			dif_X *= F;
+			dif_Y *= F;
+			dif_Z *= F;
+
+			fuerza_totalX[cuerpo1] += dif_X;
+			fuerza_totalY[cuerpo1] += dif_Y;
+			fuerza_totalZ[cuerpo1] += dif_Z;
+
+			fuerza_totalX[cuerpo2] -= dif_X;
+			fuerza_totalY[cuerpo2] -= dif_Y;
+			fuerza_totalZ[cuerpo2] -= dif_Z;
+		}
+	}
+
+    return;
+}
+
+void moverCuerpos(cuerpo_t *cuerpos, int N, int bloque, int tid,int dt){
+ int cuerpo;
+	for(cuerpo = tid*bloque; cuerpo < tid*(bloque+1); cuerpo++){
+
+		fuerza_totalX[cuerpo] *= 1/cuerpos[cuerpo].masa;
+		fuerza_totalY[cuerpo] *= 1/cuerpos[cuerpo].masa;
+		//fuerza_totalZ[cuerpo] *= 1/cuerpos[cuerpo].masa;
+
+		cuerpos[cuerpo].vx += fuerza_totalX[cuerpo]*dt;
+		cuerpos[cuerpo].vy += fuerza_totalY[cuerpo]*dt;
+		//cuerpos[cuerpo].vz += fuerza_totalZ[cuerpo]*dt;
+
+		cuerpos[cuerpo].px += cuerpos[cuerpo].vx *dt;
+		cuerpos[cuerpo].py += cuerpos[cuerpo].vy *dt;
+		//cuerpos[cuerpo].pz += cuerpos[cuerpo].vz *dt;
+
+		fuerza_totalX[cuerpo] = 0.0;
+		fuerza_totalY[cuerpo] = 0.0;
+		fuerza_totalZ[cuerpo] = 0.0;
+
+    	}
+}
+
+pthread_barrier_t barrier;
+
+// void funcionThreads(cuerpo_t *cuerpos, int N, int dt)
+void *funcionThreads(void *arg)
 {
+    int tid=(int)arg;
+    int bloque=N/(2*T); //Cada thread tiene 2 bloquecitos de N/4T. Suma N/2T en total
+    int bloque2=N/T;
     int cuerpo1, cuerpo2;
     float dif_X, dif_Y, dif_Z;
     float distancia;
     float F;
-
-    for (cuerpo1 = 0; cuerpo1 < N - 1; cuerpo1++)
-    {
-        for (cuerpo2 = cuerpo1 + 1; cuerpo2 < N; cuerpo2++)
-        {
-            if ((cuerpos[cuerpo1].px == cuerpos[cuerpo2].px) && (cuerpos[cuerpo1].py == cuerpos[cuerpo2].py) && (cuerpos[cuerpo1].pz == cuerpos[cuerpo2].pz))
-                continue;
-
-            dif_X = cuerpos[cuerpo2].px - cuerpos[cuerpo1].px;
-            dif_Y = cuerpos[cuerpo2].py - cuerpos[cuerpo1].py;
-            dif_Z = cuerpos[cuerpo2].pz - cuerpos[cuerpo1].pz;
-
-            distancia = sqrt(dif_X * dif_X + dif_Y * dif_Y + dif_Z * dif_Z);
-
-            F = (G * cuerpos[cuerpo1].masa * cuerpos[cuerpo2].masa) / (distancia * distancia);
-
-            dif_X *= F;
-            dif_Y *= F;
-            dif_Z *= F;
-
-            fuerza_totalX[cuerpo1] += dif_X;
-            fuerza_totalY[cuerpo1] += dif_Y;
-            fuerza_totalZ[cuerpo1] += dif_Z;
-
-            fuerza_totalX[cuerpo2] -= dif_X;
-            fuerza_totalY[cuerpo2] -= dif_Y;
-            fuerza_totalZ[cuerpo2] -= dif_Z;
-        }
-    }
-}
-
-void moverCuerpos(cuerpo_t *cuerpos, int N, int dt)
-{
     int cuerpo;
-    for (cuerpo = 0; cuerpo < N; cuerpo++)
-    {
+    
 
-        fuerza_totalX[cuerpo] *= 1 / cuerpos[cuerpo].masa;
-        fuerza_totalY[cuerpo] *= 1 / cuerpos[cuerpo].masa;
-        // fuerza_totalZ[cuerpo] *= 1/cuerpos[cuerpo].masa;
+    int paso=0;
+    while(paso<pasos){
+        
+        calcularFuerzas(cuerpos,N,bloque,tid);
 
-        cuerpos[cuerpo].vx += fuerza_totalX[cuerpo] * dt;
-        cuerpos[cuerpo].vy += fuerza_totalY[cuerpo] * dt;
-        // cuerpos[cuerpo].vz += fuerza_totalZ[cuerpo]*dt;
+        //Barrera
 
-        cuerpos[cuerpo].px += cuerpos[cuerpo].vx * dt;
-        cuerpos[cuerpo].py += cuerpos[cuerpo].vy * dt;
-        // cuerpos[cuerpo].pz += cuerpos[cuerpo].vz *dt;
+        //Calculo de movimientos
 
-        fuerza_totalX[cuerpo] = 0.0;
-        fuerza_totalY[cuerpo] = 0.0;
-        fuerza_totalZ[cuerpo] = 0.0;
+        pthread_barrier_wait(&barrier);
+
+        void moverCuerpos(cuerpos,N,bloque2,tid,dt);
+
+        //Otra barrera
+
+        pthread_barrier_wait(&barrier);
+
+        paso++;
     }
 }
 
 void gravitacionCPU(cuerpo_t *cuerpos, int N, int dt)
 {
-    calcularFuerzas(cuerpos, N, dt);
-    moverCuerpos(cuerpos, N, dt);
+    pthread_t misThreads[T];
+    int threads_ids[T];
+
+    pthread_barrier_init(&barrier, NULL, T);
+
+    for(int id=0;id<T;id++){
+		threads_ids[id]=id;
+		pthread_create(&misThreads[id],NULL,&funcionThreads,(void*)id);
+	}
+	
+	for(int id=0; id<T;id++){
+		pthread_join(misThreads[id],NULL);
+	}
+
+    pthread_barrier_destroy(&barrier);
+
+    // calcularFuerzas(cuerpos, N, dt);
+    // moverCuerpos(cuerpos, N, dt);
 }
 
 void inicializarEstrella(cuerpo_t *cuerpo, int i, double n)
@@ -300,6 +379,7 @@ int main(int argc, char *argv[])
     N = atoi(argv[1]);            // 512 1024 2048 4096
     delta_tiempo = atof(argv[2]); // 200
     pasos = atoi(argv[3]);        // 1000
+    T = atoi(argv[4]);            // 4 8
 
     cuerpos = (cuerpo_t *)malloc(sizeof(cuerpo_t) * N);
     fuerza_totalX = (float *)malloc(sizeof(float) * N);
@@ -310,11 +390,11 @@ int main(int argc, char *argv[])
 
     tIni = dwalltime();
 
-    int paso;
-    for (paso = 0; paso < pasos; paso++)
-    {
+    // int paso;
+    // for (paso = 0; paso < pasos; paso++)
+    // {
         gravitacionCPU(cuerpos, N, delta_tiempo);
-    }
+    // }
 
     tFin = dwalltime();
     tTotal = tFin - tIni;
