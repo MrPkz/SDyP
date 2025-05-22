@@ -112,17 +112,25 @@ void moverCuerpos(cuerpo_t *cuerpos, int N, int dt){
  int cuerpo;
 	for(cuerpo = 0; cuerpo<N ; cuerpo++){
 
+		// if(cuerpo==0) printf("Forza %.15f\n",fuerza_totalX[cuerpo]);
+
 		fuerza_totalX[cuerpo] *= 1/cuerpos[cuerpo].masa;
 		fuerza_totalY[cuerpo] *= 1/cuerpos[cuerpo].masa;
 		//fuerza_totalZ[cuerpo] *= 1/cuerpos[cuerpo].masa;
+
+		// if(cuerpo==0) printf("Acel %.15f\n",fuerza_totalX[cuerpo]);
 
 		cuerpos[cuerpo].vx += fuerza_totalX[cuerpo]*dt;
 		cuerpos[cuerpo].vy += fuerza_totalY[cuerpo]*dt;
 		//cuerpos[cuerpo].vz += fuerza_totalZ[cuerpo]*dt;
 
+		// if(cuerpo==0) printf("Veloc %d %.15f\n",dt,cuerpos[cuerpo].vx);
+
 		cuerpos[cuerpo].px += cuerpos[cuerpo].vx *dt;
 		cuerpos[cuerpo].py += cuerpos[cuerpo].vy *dt;
 		//cuerpos[cuerpo].pz += cuerpos[cuerpo].vz *dt;
+
+		// if(cuerpo==2) printf("%.15f\n",cuerpos[cuerpo].px);
 
 		fuerza_totalX[cuerpo] = 0.0;
 		fuerza_totalY[cuerpo] = 0.0;
@@ -282,9 +290,10 @@ int main(int argc, char * argv[]) {
 
 	inicializarCuerpos(cuerpos,N);
 
-	printf("Posicion inicial de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
-	printf("Posicion inicial de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
-    printf("Posicion inicial de cuerpo 2: %.2f %.2f \n",cuerpos[2].px,cuerpos[2].py);
+	for(int i=0; i<N; i++)
+		printf("Posicion inicial de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
+	// printf("Posicion inicial de cuerpo 1: %.15f %.2f \n",cuerpos[1].px,cuerpos[1].py);
+    // printf("Posicion inicial de cuerpo 2: %.15f %.2f \n",cuerpos[2].px,cuerpos[2].py);
 	
 	tIni = dwalltime(); 
 	
@@ -297,9 +306,10 @@ int main(int argc, char * argv[]) {
 	tTotal = tFin - tIni;
 	
 	printf("Tiempo en segundos: %f\n",tTotal);
-	printf("Posicion final de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
-	printf("Posicion final de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
-    printf("Posicion final de cuerpo 2: %.2f %.2f \n",cuerpos[2].px,cuerpos[2].py);
+	for(int i=0; i<N; i++)
+		printf("Posicion final de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
+	// printf("Posicion final de cuerpo 1: %.15f %.15f \n",cuerpos[1].px,cuerpos[1].py);
+    // printf("Posicion final de cuerpo 2: %.15f %.15f \n",cuerpos[2].px,cuerpos[2].py);
 
 	finalizar();
     return(0);

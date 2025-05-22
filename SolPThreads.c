@@ -128,7 +128,7 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 		}
 	}
 
-    for (cuerpo1 = N-tid*bloque-1; cuerpo1 > N-((tid-1)*bloque)-1; cuerpo1--){
+    for (cuerpo1 = N-((tid+1)*bloque); cuerpo1 < (N-tid*bloque); cuerpo1++){
         indice1=cuerpo1*T+tid;
 		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
             indice2=cuerpo2*T+tid;
@@ -171,29 +171,38 @@ void moverCuerpos(cuerpo_t *cuerpos, int N, int bloque, int tid,int dt){
         for(index = 1; index<T; index++){
             fuerza_totalX[base]+=fuerza_totalX[base+index];
             fuerza_totalY[base]+=fuerza_totalY[base+index];
+            fuerza_totalX[base+index] = 0.0;
+            fuerza_totalY[base+index] = 0.0;
+            fuerza_totalZ[base+index] = 0.0;
             // fuerza_totalZ[base]+=fuerza_totalZ[base+index];
         }
 
-        // printf("%d %d \n",bloque,tid);
-        if(cuerpo==0) printf("%.15f\n",fuerza_totalX[base]);
+        // printf("%d %d \n",cuerpo,tid);
+        // if(cuerpo==0) printf("Forza %.15f\n",fuerza_totalX[base]);
 
 		fuerza_totalX[base] *= 1/cuerpos[cuerpo].masa;
 		fuerza_totalY[base] *= 1/cuerpos[cuerpo].masa;
 		//fuerza_totalZ[base] *= 1/cuerpos[cuerpo].masa;
 
+        // if(cuerpo==0) printf("Acel %.15f\n",fuerza_totalX[base]);
+
 		cuerpos[cuerpo].vx += fuerza_totalX[base]*dt;
 		cuerpos[cuerpo].vy += fuerza_totalY[base]*dt;
 		//cuerpos[cuerpo].vz += fuerza_totalZ[base]*dt;
+
+        // if(cuerpo==0) printf("Veloc %d %.15f\n",dt,cuerpos[cuerpo].vx);
 
 		cuerpos[cuerpo].px += cuerpos[cuerpo].vx *dt;
 		cuerpos[cuerpo].py += cuerpos[cuerpo].vy *dt;
 		//cuerpos[cuerpo].pz += cuerpos[cuerpo].vz *dt;
 
-        for(index = 0; index<T; index++){
-            fuerza_totalX[base+index] = 0.0;
-            fuerza_totalY[base+index] = 0.0;
-            fuerza_totalZ[base+index] = 0.0;
-        }
+        // if(cuerpo==2) printf("%.15f\n",cuerpos[cuerpo].px);
+
+        // for(index = 0; index<T; index++){
+            fuerza_totalX[base] = 0.0;
+            fuerza_totalY[base] = 0.0;
+            fuerza_totalZ[base] = 0.0;
+        // }
 
     }
 }
@@ -221,14 +230,17 @@ void *funcionThreads(void *arg)
         //Barrera
 
         //Calculo de movimientos
-
+        // printf("1\n");
         pthread_barrier_wait(&barrier);
+        // printf("2\n");
 
         moverCuerpos(cuerpos,N,bloque2,tid,dt);
 
         //Otra barrera
 
+        // printf("3\n");
         pthread_barrier_wait(&barrier);
+        // printf("4\n");
 
         paso++;
     }
@@ -414,6 +426,7 @@ int main(int argc, char *argv[])
 
     N = atoi(argv[1]);            // 512 1024 2048 4096
     delta_tiempo = atof(argv[2]); // 200
+    dt=delta_tiempo;
     pasos = atoi(argv[3]);        // 1000
     T = atoi(argv[4]);            // 4 8
 
@@ -431,9 +444,10 @@ int main(int argc, char *argv[])
         fuerza_totalZ[i] = 0.0;
     }
 
-    printf("Posicion inicial de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
-	printf("Posicion inicial de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
-    printf("Posicion inicial de cuerpo 2: %.2f %.2f \n",cuerpos[2].px,cuerpos[2].py);
+    for(int i=0; i<N; i++)
+		printf("Posicion inicial de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
+	// printf("Posicion inicial de cuerpo 1: %.15f %.2f \n",cuerpos[1].px,cuerpos[1].py);
+    // printf("Posicion inicial de cuerpo 2: %.15f %.2f \n",cuerpos[2].px,cuerpos[2].py);
 
     tIni = dwalltime();
 
@@ -447,9 +461,10 @@ int main(int argc, char *argv[])
     tTotal = tFin - tIni;
 
     printf("Tiempo en segundos: %f\n", tTotal);
-    printf("Posicion final de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
-    printf("Posicion final de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
-    printf("Posicion final de cuerpo 2: %.2f %.2f \n",cuerpos[2].px,cuerpos[2].py);
+    for(int i=0; i<N; i++)
+		printf("Posicion final de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
+    // printf("Posicion final de cuerpo 1: %.15f %.15f \n",cuerpos[1].px,cuerpos[1].py);
+    // printf("Posicion final de cuerpo 2: %.15f %.15f \n",cuerpos[2].px,cuerpos[2].py);
 
     finalizar();
     return (0);
