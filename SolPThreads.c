@@ -79,12 +79,15 @@ int N,T;
 
 void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 	int cuerpo1, cuerpo2;
+    int indice1,indice2;
 	float dif_X, dif_Y, dif_Z;
 	float distancia;
 	float F;
 
 	for (cuerpo1 = tid*bloque; cuerpo1 < (tid+1)*(bloque); cuerpo1++){
+        indice1=cuerpo1*T+tid;
 		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
+            indice2=cuerpo2*T+tid;
 			if ( (cuerpos[cuerpo1].px == cuerpos[cuerpo2].px) && (cuerpos[cuerpo1].py == cuerpos[cuerpo2].py) && (cuerpos[cuerpo1].pz == cuerpos[cuerpo2].pz))
 				continue;
 
@@ -100,18 +103,20 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 			dif_Y *= F;
 			dif_Z *= F;
 
-			fuerza_totalX[cuerpo1] += dif_X;
-			fuerza_totalY[cuerpo1] += dif_Y;
-			fuerza_totalZ[cuerpo1] += dif_Z;
+			fuerza_totalX[indice1] += dif_X;
+			fuerza_totalY[indice1] += dif_Y;
+			fuerza_totalZ[indice1] += dif_Z;
 
-			fuerza_totalX[cuerpo2] -= dif_X;
-			fuerza_totalY[cuerpo2] -= dif_Y;
-			fuerza_totalZ[cuerpo2] -= dif_Z;
+			fuerza_totalX[indice2] -= dif_X;
+			fuerza_totalY[indice2] -= dif_Y;
+			fuerza_totalZ[indice2] -= dif_Z;
 		}
 	}
 
     for (cuerpo1 = N-tid*bloque-1; cuerpo1 > N-((tid-1)*bloque)-1; cuerpo1--){
+        indice1=cuerpo1*T+tid;
 		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
+            indice2=cuerpo2*T+tid;
 			if ( (cuerpos[cuerpo1].px == cuerpos[cuerpo2].px) && (cuerpos[cuerpo1].py == cuerpos[cuerpo2].py) && (cuerpos[cuerpo1].pz == cuerpos[cuerpo2].pz))
 				continue;
 
@@ -127,13 +132,13 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 			dif_Y *= F;
 			dif_Z *= F;
 
-			fuerza_totalX[cuerpo1] += dif_X;
-			fuerza_totalY[cuerpo1] += dif_Y;
-			fuerza_totalZ[cuerpo1] += dif_Z;
+			fuerza_totalX[indice1] += dif_X;
+			fuerza_totalY[indice1] += dif_Y;
+			fuerza_totalZ[indice1] += dif_Z;
 
-			fuerza_totalX[cuerpo2] -= dif_X;
-			fuerza_totalY[cuerpo2] -= dif_Y;
-			fuerza_totalZ[cuerpo2] -= dif_Z;
+			fuerza_totalX[indice2] -= dif_X;
+			fuerza_totalY[indice2] -= dif_Y;
+			fuerza_totalZ[indice2] -= dif_Z;
 		}
 	}
 
@@ -141,26 +146,36 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 }
 
 void moverCuerpos(cuerpo_t *cuerpos, int N, int bloque, int tid,int dt){
- int cuerpo;
+ int cuerpo,index,base;
 	for(cuerpo = tid*bloque; cuerpo < tid*(bloque+1); cuerpo++){
 
-		fuerza_totalX[cuerpo] *= 1/cuerpos[cuerpo].masa;
-		fuerza_totalY[cuerpo] *= 1/cuerpos[cuerpo].masa;
-		//fuerza_totalZ[cuerpo] *= 1/cuerpos[cuerpo].masa;
+        base=cuerpo*T;
+        for(index = 1; index<T; index++){
+            fuerza_totalX[base]+=fuerza_totalX[base+index];
+            fuerza_totalY[base]+=fuerza_totalY[base+index];
+            // fuerza_totalZ[base]+=fuerza_totalZ[base+index];
 
-		cuerpos[cuerpo].vx += fuerza_totalX[cuerpo]*dt;
-		cuerpos[cuerpo].vy += fuerza_totalY[cuerpo]*dt;
-		//cuerpos[cuerpo].vz += fuerza_totalZ[cuerpo]*dt;
+        }
+
+		fuerza_totalX[base] *= 1/cuerpos[cuerpo].masa;
+		fuerza_totalY[base] *= 1/cuerpos[cuerpo].masa;
+		//fuerza_totalZ[base] *= 1/cuerpos[cuerpo].masa;
+
+		cuerpos[cuerpo].vx += fuerza_totalX[base]*dt;
+		cuerpos[cuerpo].vy += fuerza_totalY[base]*dt;
+		//cuerpos[cuerpo].vz += fuerza_totalZ[base]*dt;
 
 		cuerpos[cuerpo].px += cuerpos[cuerpo].vx *dt;
 		cuerpos[cuerpo].py += cuerpos[cuerpo].vy *dt;
 		//cuerpos[cuerpo].pz += cuerpos[cuerpo].vz *dt;
 
-		fuerza_totalX[cuerpo] = 0.0;
-		fuerza_totalY[cuerpo] = 0.0;
-		fuerza_totalZ[cuerpo] = 0.0;
+        for(index = 0; index<T; index++){
+            fuerza_totalX[base+index] = 0.0;
+            fuerza_totalY[base+index] = 0.0;
+            fuerza_totalZ[base+index] = 0.0;
+        }
 
-    	}
+    }
 }
 
 pthread_barrier_t barrier;
@@ -189,7 +204,7 @@ void *funcionThreads(void *arg)
 
         pthread_barrier_wait(&barrier);
 
-        void moverCuerpos(cuerpos,N,bloque2,tid,dt);
+        moverCuerpos(cuerpos,N,bloque2,tid,dt);
 
         //Otra barrera
 
@@ -317,7 +332,8 @@ void inicializarCuerpos(cuerpo_t *cuerpos, int N)
     toroide_r = 1.0;
     toroide_R = 2 * toroide_r;
 
-    srand(time(NULL));
+    // srand(time(NULL));
+    srand(0);
 
     for (cuerpo = 0; cuerpo < N; cuerpo++)
     {
@@ -382,9 +398,9 @@ int main(int argc, char *argv[])
     T = atoi(argv[4]);            // 4 8
 
     cuerpos = (cuerpo_t *)malloc(sizeof(cuerpo_t) * N);
-    fuerza_totalX = (float *)malloc(sizeof(float) * N);
-    fuerza_totalY = (float *)malloc(sizeof(float) * N);
-    fuerza_totalZ = (float *)malloc(sizeof(float) * N);
+    fuerza_totalX = (float *)malloc(sizeof(float) * T * N);
+    fuerza_totalY = (float *)malloc(sizeof(float) * T * N);
+    fuerza_totalZ = (float *)malloc(sizeof(float) * T * N);
 
     inicializarCuerpos(cuerpos, N);
 
@@ -400,6 +416,7 @@ int main(int argc, char *argv[])
     tTotal = tFin - tIni;
 
     printf("Tiempo en segundos: %f\n", tTotal);
+    printf("Posicion final de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
 
     finalizar();
     return (0);

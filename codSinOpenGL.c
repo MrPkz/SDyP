@@ -29,7 +29,7 @@ double tIni, tFin, tTotal;
 //
 // Constantes para Algoritmo de gravitacion
 //
-#define PI (3.141592653589793)
+#define M_PI (3.141592653589793)
 #define G 6.673e-11
 #define ESTRELLA 0
 #define POLVO 1
@@ -219,7 +219,8 @@ void inicializarCuerpos(cuerpo_t *cuerpos,int N){
 	toroide_r = 1.0;
 	toroide_R = 2*toroide_r;
 	
-	srand(time(NULL));
+	// srand(time(NULL));
+	srand(0);
 
 	for(cuerpo = 0; cuerpo < N; cuerpo++){
 
@@ -292,6 +293,7 @@ int main(int argc, char * argv[]) {
 	tTotal = tFin - tIni;
 	
 	printf("Tiempo en segundos: %f\n",tTotal);
+	printf("Posicion final de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
 
 	finalizar();
     return(0);
