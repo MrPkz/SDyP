@@ -30,7 +30,7 @@ double tIni, tFin, tTotal;
 //
 // Constantes para Algoritmo de gravitacion
 //
-#define M_PI (3.141592653589793)
+#define PI (3.141592653589793)
 #define G 6.673e-11
 #define ESTRELLA 0
 #define POLVO 1
@@ -404,6 +404,10 @@ int main(int argc, char *argv[])
 
     inicializarCuerpos(cuerpos, N);
 
+    printf("Posicion inicial de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
+	printf("Posicion inicial de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
+    printf("Posicion inicial de cuerpo 2: %.2f %.2f \n",cuerpos[2].px,cuerpos[2].py);
+
     tIni = dwalltime();
 
     // int paso;
@@ -417,6 +421,8 @@ int main(int argc, char *argv[])
 
     printf("Tiempo en segundos: %f\n", tTotal);
     printf("Posicion final de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
+    printf("Posicion final de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
+    printf("Posicion final de cuerpo 2: %.2f %.2f \n",cuerpos[2].px,cuerpos[2].py);
 
     finalizar();
     return (0);
