@@ -87,6 +87,7 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 	for (cuerpo1 = tid*bloque; cuerpo1 < (tid+1)*(bloque); cuerpo1++){
         indice1=cuerpo1*T+tid;
 		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
+            // printf("PAREJA %d %d \n",cuerpo1,cuerpo2);
             indice2=cuerpo2*T+tid;
 			if ( (cuerpos[cuerpo1].px == cuerpos[cuerpo2].px) && (cuerpos[cuerpo1].py == cuerpos[cuerpo2].py) && (cuerpos[cuerpo1].pz == cuerpos[cuerpo2].pz))
 				continue;
@@ -94,22 +95,36 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 			dif_X = cuerpos[cuerpo2].px - cuerpos[cuerpo1].px;
 			dif_Y = cuerpos[cuerpo2].py - cuerpos[cuerpo1].py;
 			dif_Z = cuerpos[cuerpo2].pz - cuerpos[cuerpo1].pz;
+
+            // if(cuerpo2=tid*bloque+1) printf("%.2f %.2f\n",dif_X,dif_Y);
 				
 			distancia = sqrt(dif_X*dif_X + dif_Y*dif_Y + dif_Z*dif_Z);
 
+            // if(cuerpo2==1) printf("DIST %.6f \n",distancia);
+
 			F = (G*cuerpos[cuerpo1].masa*cuerpos[cuerpo2].masa)/(distancia*distancia);
+
+            // if(cuerpo2==1) printf("MASAS %.6f %.6f \n",cuerpos[cuerpo1].masa,cuerpos[cuerpo2].masa);
+
+            // if(cuerpo2==1) printf("FUERZA %.15f \n",F);
 
 			dif_X *= F;
 			dif_Y *= F;
 			dif_Z *= F;
 
+            // if(cuerpo2=tid*bloque+1) printf("COORD %.2f %.2f\n",dif_X,dif_Y);
+
 			fuerza_totalX[indice1] += dif_X;
 			fuerza_totalY[indice1] += dif_Y;
 			fuerza_totalZ[indice1] += dif_Z;
 
+            // if(cuerpo2==1) printf("%d %.15f\n",cuerpo1,fuerza_totalX[indice1]);
+
 			fuerza_totalX[indice2] -= dif_X;
 			fuerza_totalY[indice2] -= dif_Y;
 			fuerza_totalZ[indice2] -= dif_Z;
+
+            // if(cuerpo2==1) printf("%d %.15f\n",cuerpo2,fuerza_totalX[indice2]);
 		}
 	}
 
@@ -147,15 +162,20 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 
 void moverCuerpos(cuerpo_t *cuerpos, int N, int bloque, int tid,int dt){
  int cuerpo,index,base;
-	for(cuerpo = tid*bloque; cuerpo < tid*(bloque+1); cuerpo++){
+	for(cuerpo = tid*bloque; cuerpo < (tid+1)*bloque; cuerpo++){
 
         base=cuerpo*T;
+
+        // if(fuerza_totalX[base]!=0) printf("%.2F\n",fuerza_totalX[base]);
+
         for(index = 1; index<T; index++){
             fuerza_totalX[base]+=fuerza_totalX[base+index];
             fuerza_totalY[base]+=fuerza_totalY[base+index];
             // fuerza_totalZ[base]+=fuerza_totalZ[base+index];
-
         }
+
+        // printf("%d %d \n",bloque,tid);
+        if(cuerpo==0) printf("%.15f\n",fuerza_totalX[base]);
 
 		fuerza_totalX[base] *= 1/cuerpos[cuerpo].masa;
 		fuerza_totalY[base] *= 1/cuerpos[cuerpo].masa;
@@ -403,6 +423,13 @@ int main(int argc, char *argv[])
     fuerza_totalZ = (float *)malloc(sizeof(float) * T * N);
 
     inicializarCuerpos(cuerpos, N);
+
+    for (int i = 0; i < N*T; i++)
+    {
+        fuerza_totalX[i] = 0.0;
+        fuerza_totalY[i] = 0.0;
+        fuerza_totalZ[i] = 0.0;
+    }
 
     printf("Posicion inicial de cuerpo 0: %.2f %.2f \n",cuerpos[0].px,cuerpos[0].py);
 	printf("Posicion inicial de cuerpo 1: %.2f %.2f \n",cuerpos[1].px,cuerpos[1].py);
