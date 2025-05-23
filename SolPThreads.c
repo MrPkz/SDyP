@@ -83,6 +83,7 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 	float dif_X, dif_Y, dif_Z;
 	float distancia;
 	float F;
+    // printf("Hilo %d va desde cuerpo %d hasta cuerpo %d\n",tid,tid*bloque,(tid+1)*bloque);
 
 	for (cuerpo1 = tid*bloque; cuerpo1 < (tid+1)*(bloque); cuerpo1++){
         indice1=cuerpo1*T+tid;
@@ -128,6 +129,7 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 		}
 	}
 
+    // printf("Hilo %d va desde cuerpo %d hasta cuerpo %d\n",tid,N-(tid+1)*bloque,N-(tid)*bloque);
     for (cuerpo1 = N-((tid+1)*bloque); cuerpo1 < (N-tid*bloque); cuerpo1++){
         indice1=cuerpo1*T+tid;
 		for(cuerpo2 = cuerpo1 + 1; cuerpo2<N ; cuerpo2++){
@@ -162,6 +164,7 @@ void calcularFuerzas(cuerpo_t *cuerpos, int N, int bloque, int tid){
 
 void moverCuerpos(cuerpo_t *cuerpos, int N, int bloque, int tid,int dt){
  int cuerpo,index,base;
+    // printf("Hilo %d va desde cuerpo %d hasta cuerpo %d\n",tid,tid*bloque,(tid+1)*bloque);
 	for(cuerpo = tid*bloque; cuerpo < (tid+1)*bloque; cuerpo++){
 
         base=cuerpo*T;
@@ -244,6 +247,8 @@ void *funcionThreads(void *arg)
 
         paso++;
     }
+
+    return NULL;
 }
 
 void gravitacionCPU(cuerpo_t *cuerpos, int N, int dt)
@@ -255,7 +260,7 @@ void gravitacionCPU(cuerpo_t *cuerpos, int N, int dt)
 
     for(int id=0;id<T;id++){
 		threads_ids[id]=id;
-		pthread_create(&misThreads[id],NULL,&funcionThreads,(void*)id);
+		pthread_create(&misThreads[id],NULL,&funcionThreads,(void*)threads_ids[id]);
 	}
 	
 	for(int id=0; id<T;id++){
@@ -444,8 +449,8 @@ int main(int argc, char *argv[])
         fuerza_totalZ[i] = 0.0;
     }
 
-    for(int i=0; i<N; i++)
-		printf("Posicion inicial de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
+    // for(int i=0; i<N; i++)
+	// 	printf("Posicion inicial de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
 	// printf("Posicion inicial de cuerpo 1: %.15f %.2f \n",cuerpos[1].px,cuerpos[1].py);
     // printf("Posicion inicial de cuerpo 2: %.15f %.2f \n",cuerpos[2].px,cuerpos[2].py);
 

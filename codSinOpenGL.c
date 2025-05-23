@@ -290,8 +290,8 @@ int main(int argc, char * argv[]) {
 
 	inicializarCuerpos(cuerpos,N);
 
-	for(int i=0; i<N; i++)
-		printf("Posicion inicial de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
+	// for(int i=0; i<N; i++)
+	// 	printf("Posicion inicial de cuerpo %d: %.15f %.15f \n",i,cuerpos[i].px,cuerpos[i].py);
 	// printf("Posicion inicial de cuerpo 1: %.15f %.2f \n",cuerpos[1].px,cuerpos[1].py);
     // printf("Posicion inicial de cuerpo 2: %.15f %.2f \n",cuerpos[2].px,cuerpos[2].py);
 	
